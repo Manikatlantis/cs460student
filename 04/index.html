@@ -105,15 +105,21 @@
       // create multiple all_fish
       all_fish = [];
       all_fish.push( createFish( new Float32Array([-.4,-.4,0]), new Float32Array([1.,1.,1.,1.]) ) );
-      all_fish.push( createFish( new Float32Array([0,0,0]), new Float32Array([1.,0.,0.,1.]) ) );
-
-
+      // all_fish.push( createFish( new Float32Array([0,0,0]), new Float32Array([1.,0.,0.,1.]) ) );
+      
+      
+      for (let i = 0; i < 101; i++){
+        random_color = [Math.random(),Math.random(),Math.random(),Math.random()];
+        random_offset = [Math.random()-Math.random(), Math.random()-Math.random(), 0];
+        random_scale = Math.random()*0.3; 
+        all_fish.push( createFish(random_offset, random_color, random_scale, 1) );
+      }
       animate();
 
     };
 
 
-    function createFish(offset, color, scale=1, direction=1) {
+    function createFish(offset, color, scale, direction) {
 
 
       //************************************************************//
