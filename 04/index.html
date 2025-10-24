@@ -24,18 +24,13 @@
     attribute vec3 a_position;
     uniform vec3 u_offset;
     uniform float u_pointsize;
-    
+    uniform mat4 u_transform;
 
     void main(void) {
 
-      vec3 final_position = a_position;
-      final_position.x += u_offset.x;
-      final_position.y += u_offset.y;
-      final_position.z += u_offset.z;
-    
-      gl_Position = vec4( final_position, 1.);
+      vec4 final_position = u_transform * vec4(a_position, 1.);
+      gl_Position = final_position;
       gl_PointSize = u_pointsize;
-    
     }
   </script>
   
@@ -201,6 +196,10 @@
         }
         current_offset[0] *= current_dir;
 
+        transform =  [1,0,0,0,
+                      0,1,0,0,
+                      0,0,1,0,
+                      current_offset[0], current_offset[1], 0, 1];
 
 
         //************************************************************//
@@ -220,13 +219,15 @@
         gl.enableVertexAttribArray ( a_position );
 
         // find the uniform in the shader source
-        var u_offset = gl.getUniformLocation( shaderprogram, 'u_offset' );
+        var u_transform = gl.getUniformLocation( shaderprogram, 'u_transform' );
 
-        gl.uniform3fv( u_offset, current_offset)
+        gl.uniformMatrix4fv( u_transform, false, new Float32Array(transform));
 
         var u_color = gl.getUniformLocation( shaderprogram, 'u_color' );
         
         gl.uniform4fv( u_color, current_color );
+
+        
 
         //************************************************************//
         //
@@ -238,7 +239,7 @@
         u_pointsize = gl.getUniformLocation(shaderprogram, 'u_pointsize');
         gl.uniform1fv(u_pointsize, new Float32Array([current_scale * 20.]));
         gl.enableVertexAttribArray ( a_position );
-        gl.bindBuffer( gl.ARRAY_BUFFER, eye_v_buffer );
+        gl.bindBuffer( gl.ARRAY_BUFFER, current_eye_v_buffer );
         gl.vertexAttribPointer(a_position, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(a_position);
         gl.drawArrays( gl.POINTS, 0, 1);
