@@ -104,7 +104,7 @@
 
       // create multiple all_fish
       all_fish = [];
-      all_fish.push( createFish( new Float32Array([-.2,-.2,0]), new Float32Array([1.,1.,1.,1.]) ) );
+      all_fish.push( createFish( new Float32Array([-.4,-.4,0]), new Float32Array([1.,1.,1.,1.]) ) );
       all_fish.push( createFish( new Float32Array([0,0,0]), new Float32Array([1.,0.,0.,1.]) ) );
 
 
@@ -236,10 +236,16 @@
         //
         // DRAW!
         //
-
-
       
         gl.drawElements( gl.TRIANGLES, 15, gl.UNSIGNED_BYTE, 0);
+        gl.uniform4fv(u_color, new Float32Array([0, 0, 0, 0.5]));
+        u_pointsize = gl.getUniformLocation(shaderprogram, 'u_pointsize');
+        gl.uniform1fv(u_pointsize, new Float32Array([current_scale * 20.]));
+        gl.enableVertexAttribArray ( a_position );
+        gl.bindBuffer( gl.ARRAY_BUFFER, eye_v_buffer );
+        gl.vertexAttribPointer(a_position, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(a_position);
+        gl.drawArrays( gl.POINTS, 0, 1);
 
       }
 
