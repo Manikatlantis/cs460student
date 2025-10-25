@@ -66,7 +66,7 @@
       gl = c.getContext( 'webgl' ); // setup GL context
       gl.viewport(0, 0, c.width, c.height );
 
-
+      
       //************************************************************//
       //
       // SHADERS
@@ -102,7 +102,8 @@
 
       // create multiple all_fish
       all_fish = [];
-      all_fish.push( createFish( new Float32Array([-.4,-.4,0]), new Float32Array([1.,1.,1.,1.]) ) );
+      all_fish.push( createFish( [0, 0, 0], [1,0,0,1], 1, -1) );
+      // all_fish.push( createFish( new Float32Array([-.4,-.4,0]), new Float32Array([1.,1.,1.,1.]) ) );
       // all_fish.push( createFish( new Float32Array([0,0,0]), new Float32Array([1.,0.,0.,1.]) ) );
       
       
@@ -143,6 +144,9 @@
                                       ] );      // 15 bytes in tot
 
       eye_vertex = new Float32Array([0.2, 0.2, 0.0]);
+      if (direction == -1) {
+          eye_vertex = new Float32Array([0.2, -0.2, 0.0]);
+          }
       eye_v_buffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, eye_v_buffer);
       gl.bufferData(gl.ARRAY_BUFFER, eye_vertex, gl.STATIC_DRAW);
@@ -204,15 +208,13 @@
 
 
         theta = Math.random()*10 * Math.PI/180; // convert 0..10 degrees to radians
-        transform = [current_scale*Math.cos(theta), Math.sin(theta), 0, 0,
-        -Math.sin(theta), current_scale*Math.cos(theta), 0, 0,
-        0, 0, current_scale*1, 0,
-        current_offset[0], current_offset[1], current_offset[2], 1];
+        
 
-        // transform =  [1,0,0,0,
-        //               0,1,0,0,
-        //               0,0,1,0,
-        //               current_offset[0], current_offset[1], 0, 1];
+        transform = [current_dir*current_scale*Math.cos(theta), Math.sin(theta), 0, 0,
+                    -Math.sin(theta), current_dir*current_scale*Math.cos(theta), 0, 0,
+                    0, 0, current_dir*current_scale*1, 0,
+                    current_offset[0], current_offset[1], current_offset[2], 1];
+
 
 
         //************************************************************//
@@ -237,6 +239,19 @@
         gl.uniformMatrix4fv( u_transform, false, new Float32Array(transform));
 
         var u_color = gl.getUniformLocation( shaderprogram, 'u_color' );
+
+        t = performance.now() * 0.001;
+        a = 0.6 + 0.4 * Math.sin(t * 2.0); // 0.2..1.0
+        current_color = new Float32Array([
+        0.3 + 0.2*Math.sin(t + 0.0),
+        0.6 + 0.2*Math.sin(t + 2.0),
+        0.9 + 0.1*Math.sin(t + 4.0),
+        a
+        ]);
+        if (r == 0) {
+        // the large fish aka. first object should still be red!
+        current_color = [1,0,0,.7];
+        }
         
         gl.uniform4fv( u_color, current_color );
 
@@ -263,6 +278,78 @@
     };
 
   </script>
+  <button id="ocean" style="position:fixed;bottom:12px;left:12px;z-index:10;
+  padding:8px 12px;border:0;border-radius:8px;background:#0b5;color:#fff">
+  Enable Ocean Noise
+</button>
+<script>
+  // Based on: Noisehack — Web Audio API
+  // https://noisehack.com/generate-noise-web-audio-api/
+
+  let ctx = null, node = null, master = null, on = false;
+
+  function makeBrownNoiseNode(audioContext) {
+    const bufferSize = 4096;
+    let lastOut = 0.0;
+    const proc = audioContext.createScriptProcessor(bufferSize, 1, 1);
+    proc.onaudioprocess = function(e) {
+      const output = e.outputBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + 0.02 * white) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5; // roughly compensate gain (as in Noisehack)
+      }
+    };
+    return proc;
+  }
+
+
+  async function toggleOcean() {
+    const btn = document.getElementById('ocean');
+
+    if (!on) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      await ctx.resume();
+
+     
+      master = ctx.createGain();
+      master.gain.value = 0.0;
+
+      node = makeBrownNoiseNode(ctx);    
+      
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 1200;
+
+      node.connect(lp).connect(master).connect(ctx.destination);
+
+      const t = ctx.currentTime;
+      master.gain.setValueAtTime(0.0, t);
+      master.gain.linearRampToValueAtTime(0.6, t + 0.8);
+
+      on = true;
+      btn.textContent = 'Disable Ocean Noise';
+      btn.style.background = '#a33';
+    } else {
+      const t = ctx.currentTime;
+      master.gain.cancelScheduledValues(t);
+      master.gain.linearRampToValueAtTime(master.gain.value, t);
+      master.gain.linearRampToValueAtTime(0.0001, t + 0.3);
+      setTimeout(() => {
+        try { node.disconnect(); } catch(e) {}
+        try { ctx.close(); } catch(e) {}
+        ctx = node = master = null;
+        on = false;
+        btn.textContent = 'Enable Ocean Noise';
+        btn.style.background = '#0b5';
+      }, 350);
+    }
+  }
+
+  document.getElementById('ocean').addEventListener('click', toggleOcean);
+</script>
+
   <body>
     <canvas id="c"></canvas>
   </body>
