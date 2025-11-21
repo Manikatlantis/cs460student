@@ -1,50 +1,107 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>CS460 – A05 Part 6 – WebGPU</title>
+<head>
+  <meta charset="utf-8" />
+  <title>CS460 – A05 SUPER WebGPU Bonus</title>
 
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: black;
-      }
-      #renderCanvas {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-    </style>
+  <script src="https://cdn.babylonjs.com/babylon.js"></script>
+  <script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.min.js"></script>
 
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.min.js"></script>
-  </head>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1b1c30;
+    }
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
 
-  <body>
-    <canvas id="renderCanvas"></canvas>
+<body>
+  <canvas id="renderCanvas"></canvas>
 
-    <script type="module">
-      
-      const canvas = document.getElementById("renderCanvas");
+  <script type="module">
+    const canvas = document.getElementById("renderCanvas");
 
-      let engine = new BABYLON.WebGPUEngine(canvas, { antialiasing: true });
-      await engine.initAsync();
+    const engine = new BABYLON.WebGPUEngine(canvas, { antialiasing: true });
+    await engine.initAsync();
 
-      const scene = new BABYLON.Scene(engine);
+    const scene = new BABYLON.Scene(engine);
 
-      await BABYLON.SceneLoader.AppendAsync("", "skull_poly.glb", scene);
+    scene.clearColor = new BABYLON.Color4(0.13, 0.14, 0.26, 1.0);
 
-      scene.createDefaultCameraOrLight(true, true, true);
-      scene.activeCamera.attachControl(canvas, true);
+    scene.environmentTexture =
+      BABYLON.CubeTexture.CreateFromPrefilteredData(
+        "https://playground.babylonjs.com/textures/environment.env",
+        scene
+      );
 
-      engine.runRenderLoop(() => scene.render());
+    // Camera
+    const camera = new BABYLON.ArcRotateCamera(
+      "cam",
+      Math.PI / 2,
+      Math.PI / 2.4,
+      5,
+      BABYLON.Vector3.Zero(),
+      scene
+    );
+    camera.attachControl(canvas, true);
 
-      addEventListener("resize", () => engine.resize());
-    </script>
-  </body>
+    // Lights
+    const hemi = new BABYLON.HemisphericLight(
+      "hemi",
+      new BABYLON.Vector3(0, 1, 0),
+      scene
+    );
+    hemi.intensity = 0.7;
+
+    const dir = new BABYLON.DirectionalLight(
+      "dir",
+      new BABYLON.Vector3(-1, -2, -1),
+      scene
+    );
+    dir.intensity = 1.2;
+
+    // --- Load skull and apply PBR material ---
+    const result = await BABYLON.SceneLoader.ImportMeshAsync(
+      "",          
+      "",        
+      "skull_poly.glb",
+      scene
+    );
+
+    const meshes = result.meshes.filter(m => m instanceof BABYLON.Mesh);
+
+    const pbr = new BABYLON.PBRMaterial("skullPBR", scene);
+    pbr.albedoColor  = new BABYLON.Color3(1.0, 1.0, 1.0);   // base color
+    pbr.metallic     = 0.9;                                  // very metallic
+    pbr.roughness    = 0.25;                                 // kinda shiny
+    pbr.clearCoat.isEnabled = true;                          // clear coat layer
+    pbr.clearCoat.intensity = 0.9;
+    pbr.clearCoat.roughness = 0.15;
+
+    pbr.reflectivityColor = new BABYLON.Color3(1.0, 0.9, 0.6);
+
+    meshes.forEach(m => {
+      m.material = pbr;
+    });
+
+    const root = result.meshes[0];
+    root.scaling.scaleInPlace(1.3);
+
+    scene.onBeforeRenderObservable.add(() => {
+      root.rotation.y += engine.getDeltaTime() * 0.0003; 
+    });
+    engine.runRenderLoop(() => scene.render());
+
+    window.addEventListener("resize", () => engine.resize());
+  </script>
+</body>
 </html>
