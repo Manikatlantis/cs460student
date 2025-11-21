@@ -10,7 +10,6 @@
     }
   </style>
 
-  <!-- import maps (required by the course) -->
   <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module.js"></script>
 
   <script type="importmap-shim">
@@ -22,7 +21,6 @@
   }
   </script>
 
-  <!-- stats.js -->
   <script src="https://mrdoob.github.io/stats.js/build/stats.min.js"></script>
 </head>
 
@@ -142,7 +140,7 @@
     blenderFolder.addButton({ title: 'rotate!' }).on('click', () => window.SCENE.do_rotate_blender());
   });
 
-  // Resize handler
+  // Resize
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
