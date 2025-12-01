@@ -1,42 +1,49 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>CS460 – A05 SUPER WebGPU Bonus</title>
+  <head>
+    <meta charset="utf-8" />
+    <title>WebGPU Bonus</title>
 
-  <script src="https://cdn.babylonjs.com/babylon.js"></script>
-  <script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.min.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: black;
+      }
+      #renderCanvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+    </style>
+    
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.min.js"></script>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #1b1c30;
-    }
-    #renderCanvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-  </style>
 </head>
 
 <body>
   <canvas id="renderCanvas"></canvas>
 
   <script type="module">
+    import { Pane } from 'https://cdn.jsdelivr.net/npm/tweakpane@4.0.5/dist/tweakpane.min.js';
+
     const canvas = document.getElementById("renderCanvas");
 
     const engine = new BABYLON.WebGPUEngine(canvas, { antialiasing: true });
     await engine.initAsync();
 
     const scene = new BABYLON.Scene(engine);
-
     scene.clearColor = new BABYLON.Color4(0.13, 0.14, 0.26, 1.0);
-
+    const pane = new Pane();
+    const params = {
+    mesh: 'skull',   
+    spin: true      
+  };
     scene.environmentTexture =
       BABYLON.CubeTexture.CreateFromPrefilteredData(
         "https://playground.babylonjs.com/textures/environment.env",
@@ -69,7 +76,6 @@
     );
     dir.intensity = 1.2;
 
-    // --- Load skull and apply PBR material ---
     const result = await BABYLON.SceneLoader.ImportMeshAsync(
       "",          
       "",        
@@ -82,10 +88,10 @@
     const pbr = new BABYLON.PBRMaterial("skullPBR", scene);
     pbr.albedoColor  = new BABYLON.Color3(1.0, 1.0, 1.0);   // base color
     pbr.metallic     = 0.9;                                  // very metallic
-    pbr.roughness    = 0.25;                                 // kinda shiny
+    pbr.roughness    = 0.15;                                 // kinda shiny
     pbr.clearCoat.isEnabled = true;                          // clear coat layer
     pbr.clearCoat.intensity = 0.9;
-    pbr.clearCoat.roughness = 0.15;
+    pbr.clearCoat.roughness = 0.10;
 
     pbr.reflectivityColor = new BABYLON.Color3(1.0, 0.9, 0.6);
 
@@ -94,12 +100,14 @@
     });
 
     const root = result.meshes[0];
-    root.scaling.scaleInPlace(1.3);
+    root.scaling.scaleInPlace(11);
 
     scene.onBeforeRenderObservable.add(() => {
       root.rotation.y += engine.getDeltaTime() * 0.0003; 
     });
-    engine.runRenderLoop(() => scene.render());
+    engine.runRenderLoop(() => {
+    scene.render();
+    });
 
     window.addEventListener("resize", () => engine.resize());
   </script>
